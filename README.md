@@ -32,27 +32,13 @@ Before running, open **`quad_env.py`** and check line 24:
 self.drone = p.loadURDF(r"C:\Users\matte\Desktop\FALCO\Drone_Falco\quadrotor.urdf")
 ```
 
-####🤝 Contributing
+### 🤝 Contributing
 Contributions are welcome! If you find bugs or want to improve the reward function or drone dynamics:
-
-Fork the Project
-
-Create your Feature Branch:
-
-Bash
-
-git checkout -b feature/AmazingFeature
-Commit your Changes:
-
-Bash
-
-git commit -m 'Add some AmazingFeature'
-Push to the Branch:
-
-Bash
-
-git push origin feature/AmazingFeature
-Open a Pull Request
-
-👤 Author
+1. Fork the Project
+2. Create your Feature Branch:
+3. Commit your Changes:
+4. Push to the Branch:
+5. Open a Pull Request
+   
+### 👤 Author
 Matteo7100 - GitHub Profile
