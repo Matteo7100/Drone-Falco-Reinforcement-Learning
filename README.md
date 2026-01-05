@@ -30,15 +30,29 @@ This repository contains a Reinforcement Learning (RL) project designed to train
 Before running, open **`quad_env.py`** and check line 24:
 ```python
 self.drone = p.loadURDF(r"C:\Users\matte\Desktop\FALCO\Drone_Falco\quadrotor.urdf")
+```
 
-#### 🤝 Contributing
+####🤝 Contributing
 Contributions are welcome! If you find bugs or want to improve the reward function or drone dynamics:
 
-- Fork the Project
-- Create your Feature Branch (git checkout -b feature/AmazingFeature)
-- Commit your Changes (git commit -m 'Add some AmazingFeature')
-- Push to the Branch (git push origin feature/AmazingFeature)
-- Open a Pull Request
+Fork the Project
 
-##### 👤 Author
-Matteo7100 (GitHub Profile)
+Create your Feature Branch:
+
+Bash
+
+git checkout -b feature/AmazingFeature
+Commit your Changes:
+
+Bash
+
+git commit -m 'Add some AmazingFeature'
+Push to the Branch:
+
+Bash
+
+git push origin feature/AmazingFeature
+Open a Pull Request
+
+👤 Author
+Matteo7100 - GitHub Profile
