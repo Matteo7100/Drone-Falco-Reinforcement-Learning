@@ -29,8 +29,10 @@ This repository contains a Reinforcement Learning (RL) project designed to train
 
 Before running, open **`quad_env.py`** and check line 24:
 ```python
-self.drone = p.loadURDF(r"C:\Users\matte\Desktop\FALCO\Drone_Falco\quadrotor.urdf")
+self.drone = p.loadURDF(r"C:YOUR PATH\quadrotor.urdf")
 ```
+
+**your_path**
 
 ### 🤝 Contributing
 Contributions are welcome! If you find bugs or want to improve the reward function or drone dynamics:
