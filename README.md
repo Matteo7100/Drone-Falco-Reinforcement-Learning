@@ -1,46 +1,231 @@
-# Drone-Falco Reinforcement Learning
+# 🚁 Drone-Falco Reinforcement Learning
 
-This repository contains a Reinforcement Learning (RL) project designed to train an agent to control a quadcopter (drone). The project utilizes a custom environment to simulate the physics and dynamics of the "Falco" drone using **PyBullet** and trains a **PPO (Proximal Policy Optimization)** agent using **PyTorch**.
+A complete Reinforcement Learning (RL) framework for training an autonomous quadcopter controller using **Proximal Policy Optimization (PPO)**. The project features a custom drone simulation built with **PyBullet**, a **PyTorch**-based PPO implementation, and a comprehensive evaluation suite with an interactive KPI dashboard.
 
-## 📂 File Structure
+---
 
-* **`RL_code_quadcopt.py`**: The main training script. It sets up the PPO agent (Actor-Critic network), initializes the environment, and runs the training loop with a GUI progress bar.
-* **`quad_env.py`**: A custom OpenAI Gym-compatible environment. It handles the drone's physics (using PyBullet), reward calculation, and state observation.
-* **`quadrotor.urdf`** / **`quadrotor_base.obj`**: 3D model files used by PyBullet to render the drone (ensure paths in `quad_env.py` match your local setup).
-* **`requirements.txt`**: List of Python dependencies required to run the project.
+## ✨ Features
 
-### Installation
+### 🚁 Custom Drone Simulation
 
-1.  **Clone the repository:**
-    ```bash
-    git clone [https://github.com/Matteo7100/Drone-Falco-Reinforcement-Learning.git](https://github.com/Matteo7100/Drone-Falco-Reinforcement-Learning.git)
-    cd Drone-Falco-Reinforcement-Learning
-    ```
+* OpenAI Gym-compatible environment built with **PyBullet**.
+* Realistic quadcopter dynamics and physics simulation.
+* Custom drone model rendered from URDF and OBJ files.
 
-2.  **Install dependencies:**
-    Install the required libraries using the provided requirements file:
-    ```bash
-    pip install -r requirements.txt
-    ```
+### 🧠 PPO Reinforcement Learning
 
-    *Note for Linux Users: If you encounter an error regarding `tkinter`, you may need to install it via your package manager (e.g., `sudo apt-get install python3-tk`).*
+* Actor-Critic architecture implemented in **PyTorch**.
+* Generalized Advantage Estimation (GAE).
+* KL-divergence early stopping.
+* Learning-rate annealing.
+* Automatic checkpoint saving.
+* Real-time training progress GUI built with **Tkinter**.
 
-### Configuration (Important)
+### 📊 Advanced Performance Evaluation
 
-Before running, open **`quad_env.py`** and check line 24:
-```python
-self.drone = p.loadURDF(r"C:YOUR PATH\quadrotor.urdf")
+* Automated policy testing across multiple episodes.
+* Control-theory KPIs including:
+
+  * Settling Time
+  * Steady-State Error
+  * Overshoot
+  * Hover Time
+  * Control Effort
+  * Maximum Tilt
+
+### 📈 Interactive Dashboard
+
+* Upload evaluation results directly in your browser.
+* Dynamic charts and performance summaries.
+* No additional backend required.
+
+---
+
+## 📂 Project Structure
+
+```text
+Drone-Falco-Reinforcement-Learning/
+│
+├── RL_code_quadcopt.py            # PPO training script
+├── quad_env.py                    # Custom PyBullet environment
+├── eval_quad.py                   # Policy evaluation and KPI generation
+├── quadcopter_kpi_dashboard.html  # Interactive KPI dashboard
+├── quadrotor.urdf                 # Drone model definition
+├── quadrotor_base.obj             # 3D mesh for visualization
+├── requirements.txt               # Project dependencies
+└── README.md
 ```
 
-**your_path**
+### Main Files
 
-### 🤝 Contributing
-Contributions are welcome! If you find bugs or want to improve the reward function or drone dynamics:
-1. Fork the Project
-2. Create your Feature Branch:
-3. Commit your Changes:
-4. Push to the Branch:
-5. Open a Pull Request
-   
-### 👤 Author
-Matteo7100 - GitHub Profile
+| File                            | Description                                                               |
+| ------------------------------- | ------------------------------------------------------------------------- |
+| `RL_code_quadcopt.py`           | Main PPO training pipeline and learning loop.                             |
+| `quad_env.py`                   | Drone dynamics, reward function, observations, and simulation management. |
+| `eval_quad.py`                  | Evaluates trained models and exports KPI metrics to JSON.                 |
+| `quadcopter_kpi_dashboard.html` | Visualizes evaluation results through interactive charts.                 |
+
+---
+
+## 🚀 Installation
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/Matteo7100/Drone-Falco-Reinforcement-Learning.git
+cd Drone-Falco-Reinforcement-Learning
+```
+
+### 2. Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+### Linux Users
+
+If you encounter issues related to **Tkinter**, install it through your package manager:
+
+```bash
+sudo apt-get install python3-tk
+```
+
+---
+
+## ⚙️ Configuration
+
+Before running the simulation, update the URDF path in `quad_env.py` to match your local setup.
+
+Locate the following line:
+
+```python
+self.drone = p.loadURDF(r"C:\Path\To\Your\Drone_Falco\quadrotor.urdf")
+```
+
+Replace it with the correct path to your `quadrotor.urdf` file.
+
+> **Tip:** Using a relative path instead of an absolute path will make the project more portable across different machines.
+
+---
+
+## 🎮 Usage
+
+### Train the Agent
+
+Start PPO training:
+
+```bash
+python RL_code_quadcopt.py
+```
+
+During training:
+
+* A progress window will display training status.
+* Checkpoints are automatically saved.
+* The best-performing model is stored as:
+
+```text
+quad_model_best.pth
+```
+
+---
+
+### Evaluate a Trained Policy
+
+Run evaluation over multiple episodes:
+
+```bash
+python eval_quad.py --model quad_model_best.pth --episodes 20
+```
+
+This generates:
+
+```text
+eval_results.json
+```
+
+containing performance metrics and episode statistics.
+
+---
+
+### Visualize Evaluation Results
+
+Open:
+
+```text
+quadcopter_kpi_dashboard.html
+```
+
+in any modern web browser and drag-and-drop the generated `eval_results.json` file.
+
+The dashboard provides:
+
+* Success, Flip, and Out-of-Bounds rates
+* Mean Distance-to-Target over time
+* Reward distribution
+* Hover Time analysis
+* Control Effort metrics
+* Maximum Tilt measurements
+
+---
+
+## 📊 Example Workflow
+
+```text
+Train PPO Agent
+        ↓
+Save Best Model
+        ↓
+Run Evaluation
+        ↓
+Generate eval_results.json
+        ↓
+Load Dashboard
+        ↓
+Analyze KPIs
+```
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome and greatly appreciated.
+
+To contribute:
+
+1. Fork the repository.
+2. Create a feature branch:
+
+```bash
+git checkout -b feature/AmazingFeature
+```
+
+3. Commit your changes:
+
+```bash
+git commit -m "Add AmazingFeature"
+```
+
+4. Push to your branch:
+
+```bash
+git push origin feature/AmazingFeature
+```
+
+5. Open a Pull Request.
+
+Bug fixes, reward-function improvements, physics enhancements, and dashboard features are all encouraged.
+
+---
+
+## 👤 Author
+
+**Matteo7100**
+
+GitHub: https://github.com/Matteo7100
+
+---
+
+## 📜 License
+
+This project is distributed under the MIT License. See the `LICENSE` file for more information.
