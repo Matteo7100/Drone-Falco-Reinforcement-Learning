@@ -1,0 +1,207 @@
+
+<h2 class="sr-only">Quadcopter PPO policy evaluation dashboard — upload your eval_results.json to populate all KPI panels.</h2>
+
+<style>
+  .dash { padding: 1rem 0; font-family: var(--font-sans); }
+  .upload-zone { border: 1.5px dashed var(--color-border-secondary); border-radius: var(--border-radius-lg); padding: 2rem; text-align: center; margin-bottom: 1.5rem; cursor: pointer; transition: background 0.15s; }
+  .upload-zone:hover { background: var(--color-background-secondary); }
+  .upload-zone input { display: none; }
+  .upload-label { font-size: 14px; color: var(--color-text-secondary); display: block; margin-top: 6px; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 1.5rem; }
+  .kpi-card { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 0.85rem 1rem; }
+  .kpi-label { font-size: 12px; color: var(--color-text-secondary); margin: 0 0 4px; }
+  .kpi-value { font-size: 22px; font-weight: 500; color: var(--color-text-primary); margin: 0; line-height: 1.2; }
+  .kpi-sub { font-size: 11px; color: var(--color-text-tertiary); margin: 2px 0 0; }
+  .section-title { font-size: 13px; font-weight: 500; color: var(--color-text-secondary); margin: 1.5rem 0 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; }
+  .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 1.5rem; }
+  .chart-card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; }
+  .chart-title { font-size: 13px; color: var(--color-text-secondary); margin: 0 0 0.75rem; }
+  .term-bar-wrap { margin-bottom: 1.5rem; }
+  .term-bar { display: flex; height: 24px; border-radius: var(--border-radius-md); overflow: hidden; gap: 2px; }
+  .term-seg { display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; transition: flex 0.4s; }
+  .legend { display: flex; gap: 16px; margin-top: 8px; font-size: 12px; color: var(--color-text-secondary); }
+  .legend span { display: flex; align-items: center; gap: 5px; }
+  .dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+  .ep-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .ep-table th { text-align: left; padding: 6px 8px; color: var(--color-text-secondary); border-bottom: 0.5px solid var(--color-border-tertiary); font-weight: 500; }
+  .ep-table td { padding: 5px 8px; border-bottom: 0.5px solid var(--color-border-tertiary); color: var(--color-text-primary); }
+  .ep-table tr:last-child td { border-bottom: none; }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 500; }
+  .pill-ok { background: #EAF3DE; color: #3B6D11; }
+  .pill-flip { background: #FAECE7; color: #993C1D; }
+  .pill-oob { background: #FAEEDA; color: #854F0B; }
+  @media (prefers-color-scheme: dark) {
+    .pill-ok { background: #27500A; color: #C0DD97; }
+    .pill-flip { background: #712B13; color: #F0997B; }
+    .pill-oob { background: #633806; color: #FAC775; }
+  }
+  @media (max-width: 520px) { .charts-grid { grid-template-columns: 1fr; } }
+</style>
+
+<div class="dash">
+  <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+    <i class="ti ti-file-upload" style="font-size:28px; color: var(--color-text-tertiary);" aria-hidden="true"></i>
+    <span class="upload-label">Click to upload <strong>eval_results.json</strong> — or drag and drop</span>
+    <input type="file" id="fileInput" accept=".json">
+  </div>
+
+  <div id="dashboard" style="display:none;">
+    <div class="kpi-grid" id="kpiGrid"></div>
+
+    <div class="section-title">Termination breakdown</div>
+    <div class="term-bar-wrap">
+      <div class="term-bar" id="termBar"></div>
+      <div class="legend" id="termLegend"></div>
+    </div>
+
+    <div class="section-title">Per-episode metrics</div>
+    <div class="charts-grid">
+      <div class="chart-card">
+        <p class="chart-title">Distance to target over time — mean ± std across episodes</p>
+        <div style="position:relative; height:200px;"><canvas id="distChart" role="img" aria-label="Distance to target over time"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <p class="chart-title">Reward distribution per episode</p>
+        <div style="position:relative; height:200px;"><canvas id="rewardChart" role="img" aria-label="Reward per episode bar chart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <p class="chart-title">Hover time per episode (s within 0.3 m)</p>
+        <div style="position:relative; height:200px;"><canvas id="hoverChart" role="img" aria-label="Hover time per episode"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <p class="chart-title">Steady-state error per episode (m)</p>
+        <div style="position:relative; height:200px;"><canvas id="ssChart" role="img" aria-label="Steady-state error per episode"></canvas></div>
+      </div>
+    </div>
+
+    <div class="section-title">Episode log</div>
+    <div style="overflow-x:auto;">
+      <table class="ep-table" id="epTable">
+        <thead><tr>
+          <th>#</th><th>Termination</th><th>Reward</th><th>Hover (s)</th>
+          <th>SS error (m)</th><th>Settling (s)</th><th>Max tilt (°)</th><th>Ctrl effort</th>
+        </tr></thead>
+        <tbody id="epBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const fileInput = document.getElementById('fileInput');
+const dropZone  = document.getElementById('dropZone');
+
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.style.background='var(--color-background-secondary)'; });
+dropZone.addEventListener('dragleave', () => { dropZone.style.background=''; });
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.style.background=''; load(e.dataTransfer.files[0]); });
+fileInput.addEventListener('change', () => load(fileInput.files[0]));
+
+function load(file) {
+  const reader = new FileReader();
+  reader.onload = e => { try { render(JSON.parse(e.target.result)); } catch(err) { alert('Invalid JSON: ' + err.message); }};
+  reader.readAsText(file);
+}
+
+function fmt(v, d=2) { return v == null ? '—' : Number(v).toFixed(d); }
+
+function render(data) {
+  document.getElementById('dropZone').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+
+  const agg = data.aggregate;
+  const eps = data.episodes;
+
+  const kpis = [
+    { label: 'Success rate',      value: (agg.success_rate*100).toFixed(0)+'%',   sub: eps.length+' episodes' },
+    { label: 'Settling time',     value: agg.settling_time_s_mean != null ? fmt(agg.settling_time_s_mean,1)+' s' : '—', sub: (agg.settling_time_s_success*100).toFixed(0)+'% converged' },
+    { label: 'SS error',          value: fmt(agg.steady_state_error_m_mean,3)+' m', sub: '±'+fmt(agg.steady_state_error_m_std,3) },
+    { label: 'Hover time',        value: fmt(agg.hover_time_s_mean,1)+' s',         sub: '±'+fmt(agg.hover_time_s_std,1) },
+    { label: 'Max tilt',          value: fmt(agg.max_tilt_deg_mean,1)+'°',          sub: '±'+fmt(agg.max_tilt_deg_std,1) },
+    { label: 'Mean speed',        value: fmt(agg.mean_speed_ms_mean,3)+' m/s',      sub: '' },
+    { label: 'Ctrl effort',       value: fmt(agg.ctrl_effort_mean,4),               sub: 'mean sq. action' },
+    { label: 'Overshoot',         value: fmt(agg.overshoot_m_mean,3)+' m',          sub: 'post first reach' },
+  ];
+
+  const grid = document.getElementById('kpiGrid');
+  grid.innerHTML = kpis.map(k => `
+    <div class="kpi-card">
+      <p class="kpi-label">${k.label}</p>
+      <p class="kpi-value">${k.value}</p>
+      ${k.sub ? `<p class="kpi-sub">${k.sub}</p>` : ''}
+    </div>`).join('');
+
+  const ok   = agg.success_rate;
+  const flip = agg.flip_rate;
+  const oob  = agg.out_of_bounds_rate;
+  document.getElementById('termBar').innerHTML = [
+    { pct: ok,   color: '#639922', label: 'Timeout' },
+    { pct: flip, color: '#D85A30', label: 'Flip' },
+    { pct: oob,  color: '#BA7517', label: 'Out of bounds' },
+  ].filter(s => s.pct > 0).map(s => `
+    <div class="term-seg" style="flex:${s.pct}; background:${s.color}; color:#fff;">
+      ${s.pct > 0.08 ? Math.round(s.pct*100)+'%' : ''}
+    </div>`).join('');
+  document.getElementById('termLegend').innerHTML = [
+    { color:'#639922', label:'Timeout (survived)' },
+    { color:'#D85A30', label:'Flip' },
+    { color:'#BA7517', label:'Out of bounds' },
+  ].map(l => `<span><span class="dot" style="background:${l.color}"></span>${l.label}</span>`).join('');
+
+  const distArrays = eps.map(ep => ep.dist_to_target);
+  const maxLen = Math.max(...distArrays.map(a => a.length));
+  const meanDist = [], stdDist = [], step = Math.max(1, Math.floor(maxLen/60));
+  for (let i = 0; i < maxLen; i += step) {
+    const vals = distArrays.map(a => a[Math.min(i, a.length-1)]);
+    const m = vals.reduce((s,v)=>s+v,0)/vals.length;
+    const s = Math.sqrt(vals.reduce((s,v)=>s+(v-m)**2,0)/vals.length);
+    meanDist.push(m); stdDist.push(s);
+  }
+  const labels = meanDist.map((_,i) => (i*step*0.01).toFixed(1));
+  new Chart(document.getElementById('distChart'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label:'Mean dist', data: meanDist, borderColor:'#378ADD', backgroundColor:'rgba(55,138,221,0.08)', borderWidth:2, pointRadius:0, fill:false },
+        { label:'+1 SD',     data: meanDist.map((v,i)=>v+stdDist[i]), borderColor:'rgba(55,138,221,0.2)', borderWidth:0, pointRadius:0, fill:'+1' },
+        { label:'-1 SD',     data: meanDist.map((v,i)=>Math.max(0,v-stdDist[i])), borderColor:'rgba(55,138,221,0.2)', backgroundColor:'rgba(55,138,221,0.08)', borderWidth:0, pointRadius:0, fill:false },
+      ]
+    },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false} }, scales:{ x:{title:{display:true,text:'time (s)',font:{size:11}},ticks:{maxTicksLimit:8}}, y:{title:{display:true,text:'distance (m)',font:{size:11}},min:0} } }
+  });
+
+  const epNums = eps.map((_,i)=>i+1);
+  new Chart(document.getElementById('rewardChart'), {
+    type: 'bar',
+    data: { labels: epNums, datasets: [{ label:'Reward', data: eps.map(e=>e.total_reward), backgroundColor: eps.map(e => e.termination==='timeout' ? '#3B6D11' : e.termination==='flip' ? '#993C1D' : '#854F0B'), borderWidth:0 }] },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{title:{display:true,text:'episode',font:{size:11}}}, y:{title:{display:true,text:'total reward',font:{size:11}}} } }
+  });
+
+  new Chart(document.getElementById('hoverChart'), {
+    type: 'bar',
+    data: { labels: epNums, datasets: [{ label:'Hover time (s)', data: eps.map(e=>e.hover_time_s), backgroundColor:'#1D9E75', borderWidth:0 }] },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{title:{display:true,text:'episode',font:{size:11}}}, y:{title:{display:true,text:'seconds',font:{size:11}}, min:0} } }
+  });
+
+  new Chart(document.getElementById('ssChart'), {
+    type: 'bar',
+    data: { labels: epNums, datasets: [{ label:'SS error (m)', data: eps.map(e=>e.steady_state_error_m), backgroundColor:'#7F77DD', borderWidth:0 }] },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{title:{display:true,text:'episode',font:{size:11}}}, y:{title:{display:true,text:'metres',font:{size:11}}, min:0} } }
+  });
+
+  const body = document.getElementById('epBody');
+  const pillClass = t => t==='timeout' ? 'pill-ok' : t==='flip' ? 'pill-flip' : 'pill-oob';
+  body.innerHTML = eps.map((e,i) => `
+    <tr>
+      <td>${i+1}</td>
+      <td><span class="pill ${pillClass(e.termination)}">${e.termination}</span></td>
+      <td>${fmt(e.total_reward,1)}</td>
+      <td>${fmt(e.hover_time_s,1)}</td>
+      <td>${fmt(e.steady_state_error_m,3)}</td>
+      <td>${e.settling_time_s != null ? fmt(e.settling_time_s,1)+' s' : '—'}</td>
+      <td>${fmt(e.max_tilt_deg,1)}</td>
+      <td>${fmt(e.ctrl_effort,4)}</td>
+    </tr>`).join('');
+}
+</script>
